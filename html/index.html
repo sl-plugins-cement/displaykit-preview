@@ -63,8 +63,9 @@
 <script>
 (async function () {
   const q = new URLSearchParams(location.search);
-  const dir = (q.get('dir') || 'out/WikiExamples').replace(/\/$/, '');
-  const root = '/' + dir + '/';
+  const dir = (q.get('dir') || 'examples').replace(/\/$/, '');
+  const live = dir !== 'examples';
+  const root = '../' + dir + '/';
   const $ = id => document.getElementById(id);
   const state = {
     scenario: q.get('scenario'), frame: q.has('frame') ? +q.get('frame') : null, viewer: q.has('viewer') ? +q.get('viewer') : null,
@@ -73,7 +74,7 @@
   };
   let scene = null, sceneText = '', result = null;
 
-  DkRender.installFonts('/fonts/');
+  DkRender.installFonts('../fonts/');
   await DkRender.fontsReady();
 
   for (const [id, key] of [['res', 'res'], ['scale', 'scale'], ['metrics', 'metrics'], ['cjk', 'cjk'], ['backdrop', 'backdrop']]) {
@@ -105,8 +106,10 @@
 
   async function poll() {
     try {
-      const st = await fetch(root + '_status.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
-      if (st) setStatus(st.state, st.state === 'ok' ? `built ${st.seconds}s · ${new Date(st.time * 1000).toLocaleTimeString()}` : st.state, st.message);
+      if (live) {
+        const st = await fetch(root + '_status.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+        if (st) setStatus(st.state, st.state === 'ok' ? `built ${st.seconds}s · ${new Date(st.time * 1000).toLocaleTimeString()}` : st.state, st.message);
+      }
       if (!state.scenario) await loadIndex();
       if (!state.scenario) return;
       const text = await (await fetch(root + encodeURIComponent(state.scenario) + '.json', { cache: 'no-store' })).text();
@@ -114,6 +117,7 @@
         sceneText = text;
         scene = JSON.parse(text);
         await loadIndex();
+        if (!live) setStatus('ok', 'Sample scene');
         draw();
       }
     } catch (e) { setStatus('error', String(e)); }
@@ -209,7 +213,7 @@
 
   await loadIndex();
   await poll();
-  setInterval(poll, 500);
+  if (live) setInterval(poll, 500);
 })();
 </script>
 </body>

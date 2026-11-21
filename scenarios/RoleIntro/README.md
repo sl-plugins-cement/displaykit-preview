@@ -26,6 +26,9 @@ python dkpreview.py watch scenarios/RoleIntro              # live page; pick ful
 python scenarios/RoleIntro/render.py                       # out/RoleIntro/png/ (about 80 s)
 ```
 
+Pass `--backdrop <png>` to render over a client screenshot. Pass `--native <mp4>` to render a
+side-by-side comparison (requires FFmpeg). Trim the clip so it starts at the role intro.
+
 ## Using it
 
 ```csharp
@@ -86,11 +89,8 @@ announcement profile's `PrimaryColor`, and `Objective` is written in the native 
 ## Native reference
 
 The full intro copies the native intro as the 14.2.9 client draws it in Simplified Chinese at its Regular
-speed. The source is the local capture reference
-`.references/scpsl-client-native-intros-14.2.9-zh_Hans/` (git-ignored): every role's intro at 1920x1080 with
-stills, clips, a contact sheet and a README with the full measurements and colours. Our players use the
-Chinese client, so measure against that, not the English layout (Chinese names are about 1.4x taller and the
-help line about 2x larger than in English).
+speed. Use a 1920×1080 recording with Simplified Chinese enabled for layout comparisons. Chinese
+names are about 1.4× taller and the help line about 2× larger than in English.
 
 | Element | Native (zh_Hans, 1080p) | Ours |
 | --- | --- | --- |

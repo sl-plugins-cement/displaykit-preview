@@ -4,7 +4,7 @@ worst cases.
 
     python scenarios/RoleIntro/render.py [--backdrop <png>] [--native <mp4>] [--no-build]
 
-Run from .tools/displaykit-preview. Output: out/RoleIntro/png/. The backdrop should be a real client capture with
+Run from the repository root. Output: out/RoleIntro/png/. The backdrop should be a real client capture with
 the HSM HUD visible, so overlap with the HUD shows up; without one a flat grey is used. The native video is a
 14.2 client capture whose role changes show the native intro (see README, "Native reference").
 """
@@ -23,14 +23,8 @@ import dkpreview  # noqa: E402
 
 from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
-ROOT = TOOL.parents[1]
 SCENES = TOOL / "out" / "RoleIntro"
 PNG = SCENES / "png"
-DEFAULT_BACKDROP = ROOT / ".tests/offline-clients/runtime/evidence/goc-spy-card-914-client-20261107/before-serial-514.png"
-# 1920x1080 zh_Hans capture of the native NTF Captain intro (local reference, see its README); the clip starts
-# at the intro, so NATIVE_T0 is 0.
-DEFAULT_NATIVE = ROOT / ".references/scpsl-client-native-intros-14.2.9-zh_Hans/NtfCaptain/intro-0-8s.mp4"
-NATIVE_T0 = 0.0
 
 FULL = [("full-mtf-nu7", "Foundation · MTF Nu-7"), ("full-mtf-omega1", "Foundation · Omega-1"),
         ("full-scp-001a", "SCP · SCP-001-A conversion"), ("full-scp-999", "SCP · SCP-999 (Tutorial)"),
@@ -85,14 +79,12 @@ def sheet(cells: list[tuple[Path, str]], cols: int, cell_w: int, title: str, out
     print(out)
 
 
-def native_frames(video: Path, times: list[float], work: Path) -> list[Path] | None:
-    if not video.exists():
-        return None
+def native_frames(video: Path, times: list[float], work: Path) -> list[Path]:
     work.mkdir(parents=True, exist_ok=True)
     out = []
     for i, t in enumerate(times):
         p = work / f"native-{i}.png"
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{NATIVE_T0 + t:.2f}", "-i", str(video), "-frames:v", "1", str(p)],
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", f"{t:.2f}", "-i", str(video), "-frames:v", "1", str(p)],
                        check=True)
         out.append(p)
     return out
@@ -149,14 +141,16 @@ def mock_card_hint(png: Path, lines: list[tuple[str, str]], res: str, out: Path)
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--backdrop", default=str(DEFAULT_BACKDROP))
-    ap.add_argument("--native", default=str(DEFAULT_NATIVE))
+    ap.add_argument("--backdrop", type=Path)
+    ap.add_argument("--native", type=Path, help="reference clip trimmed to start at the role intro")
     ap.add_argument("--no-build", action="store_true")
     a = ap.parse_args()
+    for option, path in [("--backdrop", a.backdrop), ("--native", a.native)]:
+        if path is not None and not path.is_file():
+            ap.error(f"{option}: file not found: {path}")
     if not a.no_build:
         subprocess.run([sys.executable, str(TOOL / "dkpreview.py"), "run", str(HERE)], check=True)
-    bd = Path(a.backdrop)
-    backdrop = f"#2b2e2b url('{bd.resolve().as_uri()}') center/cover no-repeat" if bd.exists() else "#2b2e2b"
+    backdrop = f"#2b2e2b url('{a.backdrop.resolve().as_uri()}') center/cover no-repeat" if a.backdrop else "#2b2e2b"
 
     # 1. One sheet per kind, every family, both resolutions. Full intros at their brightest settled frame.
     for kind, items, hold in [("full-intro", FULL, "hold full"), ("upgrade-card", CARD, "hold ")]:
@@ -181,8 +175,8 @@ def main() -> int:
     sc = scene("full-mtf-nu7")
     beats = [i for i, f in enumerate(sc["frames"]) if f["label"] != "destroyed"]
     times = [sc["frames"][i]["time"] for i in beats]
-    nat = native_frames(Path(a.native), times, PNG / "native")
-    if nat:
+    if a.native:
+        nat = native_frames(a.native, times, PNG / "native")
         cells = []
         for i, t, p in zip(beats, times, nat):
             cells.append((p, f"native 14.2.9 zh · +{t:.2f}s"))
