@@ -1,0 +1,14 @@
+# Generated scenes, renders and comparisons
+out/
+# Fonts fetched by fonts.py (OFL/Apache licensed upstream files)
+fonts/
+# Unity project caches
+unity/Library/
+unity/Temp/
+unity/Logs/
+unity/UserSettings/
+unity/Build/
+unity/obj/
+unity/*.csproj
+unity/*.sln
+unity/Assets/Resources/Fonts/

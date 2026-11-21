@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>DisplayKit render</title>
+<link rel="stylesheet" href="dk-render.css">
+<style>
+  html, body { margin: 0; padding: 0; overflow: hidden; }
+  #stage { position: relative; overflow: hidden; }
+  #dk-layout { display: none; }
+</style>
+<!-- dkpreview.py writes job.js next to a copy of this page: window.DK_JOB = { scene, frame, viewer, width, height, scale, cjk, backdrop, badges } -->
+<script src="job.js"></script>
+<script src="dk-render.js"></script>
+</head>
+<body>
+<div id="stage"></div>
+<pre id="dk-layout"></pre>
+<script>
+(async function () {
+  const job = window.DK_JOB;
+  DkRender.installFonts(job.fontBase || '../fonts/');
+  await DkRender.fontsReady();
+  const stage = document.getElementById('stage');
+  stage.style.background = job.backdrop || '#2b2e2b';
+  const result = DkRender.render(stage, job.scene, job);
+  if (job.badges) addBadges(stage, result);
+  // setTimeout, not requestAnimationFrame: headless --dump-dom produces no animation frames.
+  await new Promise(r => setTimeout(r, 30));
+  document.getElementById('dk-layout').textContent = JSON.stringify({
+    renderer: 'html', scale: result.scale, viewer: result.viewer, frame: result.frame.index,
+    fonts: result.texts.map(t => ({ path: t.path, font: t.fontType, size: t.fontSize, cjk: t.hasCjk })),
+    elements: DkRender.layout(stage, result.scale),
+  });
+  document.title = 'ready';
+
+  function addBadges(stage, result) {
+    const base = stage.getBoundingClientRect();
+    for (const t of result.texts) {
+      const r = t.el.getBoundingClientRect();
+      if (!r.width && !r.height) continue;
+      const b = document.createElement('div');
+      b.className = 'dk-badge' + (t.hasCjk ? ' cjk' : '');
+      b.textContent = `${t.fontType} ${t.fontSize}px${t.hasCjk ? ' · CJK not in font' : ''}`;
+      b.style.left = (r.left - base.left) + 'px';
+      b.style.top = (r.top - base.top) + 'px';
+      stage.appendChild(b);
+    }
+  }
+})();
+</script>
+</body>
+</html>

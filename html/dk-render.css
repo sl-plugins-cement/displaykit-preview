@@ -1,0 +1,66 @@
+/* UI Toolkit defaults expressed in CSS. Inline styles from the scene override these, as USS inline styles do. */
+
+.dk-panel {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+}
+
+/* One UIDocument root per canvas: fills the panel, lays children out as a column. */
+.dk-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+
+/* VisualElement defaults (Yoga): column flex, shrink 1, border-box sizing, no implicit min-size,
+   align-content flex-start, border colour black (UITK initial) with zero width. */
+.dk-el {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  position: relative;
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  align-content: flex-start;
+  border: 0 solid #000;
+  margin: 0;
+  padding: 0;
+  pointer-events: auto;
+}
+
+/* Label inset calibrated from the wiki's in-game screenshots: about 7.5px above and below the line box and 3px
+   at the sides at every font size (scoreboard rows 42px = 31 + 10 padding + 1 border; default 14px text). */
+.dk-text {
+  margin: 5.5px 1px 5px 1px;
+  padding: 2px;
+}
+
+.dk-label {
+  display: block;
+  overflow-wrap: anywhere;
+  font-kerning: normal;
+  font-synthesis: weight style;
+}
+
+/* Debug overlays (index.html toggles these classes on the stage). */
+.dk-outlines .dk-el { outline: 1px dashed rgba(0, 220, 255, 0.55); outline-offset: -1px; }
+.dk-outlines .dk-text { outline-color: rgba(255, 200, 0, 0.7); }
+.dk-badge {
+  position: absolute;
+  font: 10px/1.2 ui-monospace, Consolas, monospace;
+  color: #111;
+  background: rgba(255, 210, 60, 0.92);
+  padding: 0 3px;
+  border-radius: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 100000;
+  transform: translateY(-100%);
+}
+.dk-badge.cjk { background: rgba(255, 90, 90, 0.95); color: #fff; }

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Scenario API (PreviewContext, [DisplayKitScenario]), recorder and runner logic. net48 so scenario projects
+    (same framework as plugins) can reference it; DisplayKit.Preview.Runner hosts it on modern .NET.
+  -->
+  <Import Project="..\..\DisplayKitPreview.props" />
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>DisplayKit.Preview</AssemblyName>
+    <RootNamespace>DisplayKit.Preview</RootNamespace>
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DisplayKit.Stub\DisplayKit.Stub.csproj" />
+  </ItemGroup>
+</Project>

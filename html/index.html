@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DisplayKit Preview</title>
+<link rel="stylesheet" href="dk-render.css">
+<style>
+  :root { --bg: #15171a; --panel: #1e2125; --line: #30353b; --text: #d8dde3; --dim: #8a939c; --accent: #4fc3f7; --bad: #ff6b6b; --ok: #6bd68a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.4 system-ui, "Segoe UI", sans-serif; }
+  body { display: grid; grid-template-rows: auto 1fr; grid-template-columns: 1fr 320px; height: 100vh; }
+  header { grid-column: 1 / 3; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+  header label { display: inline-flex; gap: 6px; align-items: center; color: var(--dim); }
+  select, button, input { background: #262a2f; color: var(--text); border: 1px solid var(--line); border-radius: 4px; padding: 3px 6px; font: inherit; }
+  button { cursor: pointer; }
+  #status { margin-left: auto; padding: 2px 8px; border-radius: 10px; background: #262a2f; }
+  #status.ok { color: var(--ok); } #status.error, #status.failed { color: var(--bad); } #status.building { color: var(--accent); }
+  main { position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  #fit { transform-origin: 50% 50%; box-shadow: 0 0 0 1px var(--line), 0 10px 40px rgba(0,0,0,.5); }
+  #stage { position: relative; overflow: hidden; }
+  aside { border-left: 1px solid var(--line); background: var(--panel); overflow: auto; padding: 10px 12px; }
+  aside h3 { margin: 12px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); }
+  aside pre { white-space: pre-wrap; word-break: break-all; font: 11px/1.35 ui-monospace, Consolas, monospace; background: #17191c; padding: 8px; border-radius: 4px; margin: 0; }
+  .font-row { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; border-bottom: 1px solid #262a2f; }
+  .font-row .cjk { color: var(--bad); }
+  #error { position: absolute; inset: 12px; display: none; background: rgba(40,10,10,.95); color: #ffd7d7; border: 1px solid var(--bad); border-radius: 6px; padding: 12px; overflow: auto; font: 12px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; z-index: 10; }
+  #frameLabel { min-width: 180px; color: var(--text); }
+  .hint { color: var(--dim); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <label>Scenario <select id="scenario"></select></label>
+  <label>Frame <button id="prev">◀</button><span id="frameLabel"></span><button id="next">▶</button></label>
+  <label>Viewer <select id="viewer"></select></label>
+  <label>Resolution <select id="res">
+    <option>1920x1080</option><option>1280x720</option><option>2560x1440</option><option>1600x900</option><option>1366x768</option>
+  </select></label>
+  <label>Scale <select id="scale">
+    <option value="constant">constant pixel size</option><option value="1920x1080">scale with screen (ref 1920x1080)</option>
+  </select></label>
+  <label>Metrics <select id="metrics"><option value="client">15.0 client</option><option value="reference">UI Toolkit reference</option></select></label>
+  <label>CJK <select id="cjk"><option value="fallback">system fallback</option><option value="tofu">no fallback (□)</option></select></label>
+  <label>Backdrop <select id="backdrop">
+    <option value="#2b2e2b">dark</option><option value="#7d8a8f">light</option><option value="checker">checker</option>
+  </select></label>
+  <label><input type="checkbox" id="outlines"> boxes</label>
+  <label><input type="checkbox" id="badges" checked> fonts</label>
+  <span id="status">…</span>
+</header>
+<main>
+  <div id="fit"><div id="stage"></div></div>
+  <div id="error"></div>
+</main>
+<aside>
+  <div class="hint" id="desc"></div>
+  <h3>Frame</h3><div id="frameInfo"></div>
+  <h3>Fonts in use</h3><div id="fonts"></div>
+  <h3>Inspector <span class="hint">(hover an element)</span></h3><pre id="inspect">–</pre>
+</aside>
+<script src="dk-render.js"></script>
+<script>
+(async function () {
+  const q = new URLSearchParams(location.search);
+  const dir = (q.get('dir') || 'out/WikiExamples').replace(/\/$/, '');
+  const root = '/' + dir + '/';
+  const $ = id => document.getElementById(id);
+  const state = {
+    scenario: q.get('scenario'), frame: q.has('frame') ? +q.get('frame') : null, viewer: q.has('viewer') ? +q.get('viewer') : null,
+    res: q.get('res') || '1920x1080', scale: q.get('scale') || 'constant', cjk: q.get('cjk') || 'fallback', metrics: q.get('metrics') || 'client',
+    backdrop: q.get('backdrop') || '#2b2e2b', outlines: q.get('outlines') === '1', badges: q.get('badges') !== '0',
+  };
+  let scene = null, sceneText = '', result = null;
+
+  DkRender.installFonts('/fonts/');
+  await DkRender.fontsReady();
+
+  for (const [id, key] of [['res', 'res'], ['scale', 'scale'], ['metrics', 'metrics'], ['cjk', 'cjk'], ['backdrop', 'backdrop']]) {
+    $(id).value = state[key];
+    $(id).onchange = () => { state[key] = $(id).value; draw(); };
+  }
+  $('outlines').checked = state.outlines; $('badges').checked = state.badges;
+  $('outlines').onchange = () => { state.outlines = $('outlines').checked; draw(); };
+  $('badges').onchange = () => { state.badges = $('badges').checked; draw(); };
+  $('prev').onclick = () => { state.frame = Math.max(0, cur() - 1); draw(); };
+  $('next').onclick = () => { state.frame = Math.min(scene.frames.length - 1, cur() + 1); draw(); };
+  $('viewer').onchange = () => { state.viewer = +$('viewer').value; draw(); };
+  $('scenario').onchange = () => { state.scenario = $('scenario').value; state.frame = null; sceneText = ''; poll(); };
+  window.onresize = fit;
+  document.addEventListener('keydown', e => { if (e.key === 'ArrowLeft') $('prev').click(); if (e.key === 'ArrowRight') $('next').click(); });
+
+  const cur = () => state.frame ?? (scene ? scene.frames.length - 1 : 0);
+
+  async function loadIndex() {
+    try {
+      const names = await (await fetch(root + 'index.json', { cache: 'no-store' })).json();
+      const sel = $('scenario');
+      const prev = sel.value;
+      sel.innerHTML = names.map(n => `<option>${n}</option>`).join('');
+      if (!state.scenario || !names.includes(state.scenario)) state.scenario = names[0];
+      sel.value = state.scenario || prev;
+    } catch (e) { setStatus('error', 'no ' + root + 'index.json — run: python dkpreview.py watch <project>'); }
+  }
+
+  async function poll() {
+    try {
+      const st = await fetch(root + '_status.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).catch(() => null);
+      if (st) setStatus(st.state, st.state === 'ok' ? `built ${st.seconds}s · ${new Date(st.time * 1000).toLocaleTimeString()}` : st.state, st.message);
+      if (!state.scenario) await loadIndex();
+      if (!state.scenario) return;
+      const text = await (await fetch(root + encodeURIComponent(state.scenario) + '.json', { cache: 'no-store' })).text();
+      if (text !== sceneText) {
+        sceneText = text;
+        scene = JSON.parse(text);
+        await loadIndex();
+        draw();
+      }
+    } catch (e) { setStatus('error', String(e)); }
+  }
+
+  function setStatus(cls, text, message) {
+    $('status').className = cls; $('status').textContent = text;
+    const err = cls === 'error' || cls === 'failed' ? (message || '') : (scene && scene.error) || '';
+    $('error').style.display = err ? 'block' : 'none';
+    $('error').textContent = err;
+  }
+
+  function draw() {
+    if (!scene) return;
+    const [w, h] = state.res.split('x').map(Number);
+    const frameIdx = Math.min(cur(), scene.frames.length - 1);
+    const frame = scene.frames[frameIdx];
+    const viewers = frame.players;
+    if (state.viewer == null || !viewers.includes(state.viewer)) state.viewer = viewers[0];
+    $('viewer').innerHTML = viewers.map(id => `<option value="${id}">${id} · ${scene.playerNames[id] || ''}</option>`).join('');
+    $('viewer').value = state.viewer;
+    $('frameLabel').textContent = `${frameIdx + 1}/${scene.frames.length} · ${frame.label}`;
+    $('desc').textContent = scene.description || '';
+
+    const stage = $('stage');
+    stage.style.background = state.backdrop === 'checker'
+      ? 'repeating-conic-gradient(#3a3d40 0 25%, #2c2f32 0 50%) 0 0/32px 32px' : state.backdrop;
+    stage.classList.toggle('dk-outlines', state.outlines);
+    result = DkRender.render(stage, scene, { frame: frameIdx, viewer: state.viewer, width: w, height: h, scale: state.scale, cjk: state.cjk, metrics: state.metrics });
+    if (scene.error) setStatus('error', 'scenario threw', scene.error);
+    requestAnimationFrame(() => { if (state.badges) badges(); fonts(); fit(); });
+
+    $('frameInfo').innerHTML = `t = ${frame.time}s · ${frame.writes} property/structure writes since the previous frame<br>` +
+      frame.canvases.map(c => `canvas ${c.id}: sort ${c.sortOrder ?? '–'}, ${c.global ? 'global' : 'per-player'}, ` +
+        c.observers.map(o => `${scene.playerNames[o.id] || o.id}${o.visible ? '' : ' (hidden)'}`).join(', ')).join('<br>');
+
+    const p = new URLSearchParams({ dir, scenario: state.scenario, frame: frameIdx, viewer: state.viewer, res: state.res, scale: state.scale, metrics: state.metrics, cjk: state.cjk, backdrop: state.backdrop, outlines: state.outlines ? 1 : 0, badges: state.badges ? 1 : 0 });
+    history.replaceState(null, '', '?' + p);
+
+    stage.querySelectorAll('.dk-el').forEach(el => el.onmouseenter = e => {
+      e.stopPropagation();
+      const node = findNode(el.dataset.path);
+      const r = el.getBoundingClientRect(), b = stage.getBoundingClientRect(), s = result.scale * fitScale;
+      $('inspect').textContent = `${el.dataset.path}\n${Math.round((r.left - b.left) / s)},${Math.round((r.top - b.top) / s)}  ${Math.round(r.width / s)}×${Math.round(r.height / s)}\n` +
+        JSON.stringify(node ? Object.assign({ type: node.type }, node.content != null ? { content: node.content } : {}, node.style) : {}, null, 1);
+    });
+  }
+
+  function findNode(path) {
+    const parts = path.split('/');
+    const canvas = result.frame.canvases.find(c => 'c' + c.id === parts[0]);
+    let node = canvas && canvas.root;
+    for (const id of parts.slice(1)) node = node && (node.children || []).find(n => String(n.id) === id);
+    return node;
+  }
+
+  function badges() {
+    const stage = $('stage'), base = stage.getBoundingClientRect();
+    for (const t of result.texts) {
+      const r = t.el.getBoundingClientRect();
+      if (!r.width && !r.height) continue;
+      const b = document.createElement('div');
+      b.className = 'dk-badge' + (t.hasCjk ? ' cjk' : '');
+      b.textContent = `${t.fontType} ${t.fontSize}px${t.hasCjk ? ' · CJK' : ''}`;
+      b.style.left = (r.left - base.left) / fitScale + 'px';
+      b.style.top = (r.top - base.top) / fitScale + 'px';
+      stage.appendChild(b);
+    }
+  }
+
+  function fonts() {
+    const seen = new Map();
+    for (const t of result.texts) {
+      const k = t.fontType + (t.style !== 'Normal' ? ' +' + t.style : '');
+      const e = seen.get(k) || { n: 0, cjk: 0 };
+      e.n++; if (t.hasCjk) e.cjk++;
+      seen.set(k, e);
+    }
+    $('fonts').innerHTML = [...seen].map(([k, e]) =>
+      `<div class="font-row"><span>${k}</span><span>${e.n} text${e.n > 1 ? 's' : ''}${e.cjk ? ` · <span class="cjk">${e.cjk} with CJK: glyphs not in this font</span>` : ''}</span></div>`).join('') +
+      (result.texts.some(t => t.hasCjk) ? `<p class="hint">DisplayKit lists only Roboto, Roboto Mono, Liberation Sans and Default (NotInter). None contains CJK glyphs; whether the 15.0 client has a fallback is unknown. "no fallback" shows the worst case.</p>` : '');
+  }
+
+  let fitScale = 1;
+  function fit() {
+    const main = document.querySelector('main');
+    const [w, h] = state.res.split('x').map(Number);
+    fitScale = Math.min((main.clientWidth - 24) / w, (main.clientHeight - 24) / h, 1);
+    $('fit').style.transform = `scale(${fitScale})`;
+    $('fit').style.width = w + 'px'; $('fit').style.height = h + 'px';
+    $('fit').style.margin = `${-(h - h * fitScale) / 2}px ${-(w - w * fitScale) / 2}px`;
+  }
+
+  await loadIndex();
+  await poll();
+  setInterval(poll, 500);
+})();
+</script>
+</body>
+</html>

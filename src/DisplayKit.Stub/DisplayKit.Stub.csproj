@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Preview stand-in for SCP:SL 15.0 DisplayKit. Same namespaces, types and members as the LabAPI wiki
+    documents; records the canvas tree instead of networking it. Plugin code compiles against this now and
+    against the real game assembly later without source changes. Guesses are listed in ../../README.md.
+  -->
+  <Import Project="..\..\DisplayKitPreview.props" />
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <AssemblyName>DisplayKit.Stub</AssemblyName>
+    <RootNamespace>DisplayKit</RootNamespace>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);MSB3277;CS0067</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="DisplayKit.Preview" />
+  </ItemGroup>
+</Project>

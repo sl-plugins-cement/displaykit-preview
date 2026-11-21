@@ -1,0 +1,28 @@
+<Project>
+  <!--
+    Shared references for DisplayKit preview projects. A scenario project (or a plugin that wants to compile
+    its DisplayKit UI against the stub before 15.0) imports this file.
+
+    DisplayKitUnityManaged: UnityEngine module DLLs. DisplayKit is built on Unity 6 UI Toolkit, so this defaults
+      to the installed Unity 6000.4 editor's runtime modules; point it at the 15.0 server's Managed folder once
+      that exists.
+    ScpslManaged: game assemblies for ReferenceHub (Assembly-CSharp) and Mirror. Comes from build/scpsl-deps.props.
+  -->
+  <PropertyGroup>
+    <DisplayKitPreviewDir>$(MSBuildThisFileDirectory)</DisplayKitPreviewDir>
+    <DisplayKitUnityManaged Condition="'$(DisplayKitUnityManaged)' == ''">C:\Program Files\Unity\Hub\Editor\6000.4.10f1\Editor\Data\Managed\UnityEngine</DisplayKitUnityManaged>
+    <_DkMetarepo>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)..\..'))</_DkMetarepo>
+    <ScpslManaged Condition="'$(ScpslManaged)' == '' And Exists('$(_DkMetarepo).deps\scpsl\Managed\Assembly-CSharp.dll')">$(_DkMetarepo).deps\scpsl\Managed</ScpslManaged>
+    <ScpslManaged Condition="'$(ScpslManaged)' == ''">C:\Program Files (x86)\Steam\steamapps\common\SCP Secret Laboratory Dedicated Server\SCPSL_Data\Managed</ScpslManaged>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(DisplayKitUnityManaged)\UnityEngine.CoreModule.dll" Private="false" />
+    <Reference Include="UnityEngine.UIElementsModule" HintPath="$(DisplayKitUnityManaged)\UnityEngine.UIElementsModule.dll" Private="false" />
+    <Reference Include="UnityEngine.TextRenderingModule" HintPath="$(DisplayKitUnityManaged)\UnityEngine.TextRenderingModule.dll" Private="false" />
+    <Reference Include="UnityEngine.TextCoreTextEngineModule" HintPath="$(DisplayKitUnityManaged)\UnityEngine.TextCoreTextEngineModule.dll" Private="false" />
+    <Reference Include="UnityEngine.HierarchyCoreModule" HintPath="$(DisplayKitUnityManaged)\UnityEngine.HierarchyCoreModule.dll" Private="false" />
+    <Reference Include="Assembly-CSharp" HintPath="$(ScpslManaged)\Assembly-CSharp.dll" Private="false" />
+    <Reference Include="Mirror" HintPath="$(ScpslManaged)\Mirror.dll" Private="false" />
+    <Reference Include="NorthwoodLib" HintPath="$(ScpslManaged)\NorthwoodLib.dll" Private="false" />
+  </ItemGroup>
+</Project>

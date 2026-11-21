@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Runner host. Modern .NET because Unity 6's UIElementsModule uses default interface methods, which .NET
+    Framework 4.8 cannot load. It loads net48 scenario assemblies and resolves Unity/game DLLs from their folders.
+  -->
+  <Import Project="..\..\DisplayKitPreview.props" />
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RollForward>Major</RollForward>
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);MSB3277;NU1702</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="ProbeDir" Value="$(DisplayKitUnityManaged)" />
+    <AssemblyMetadata Include="ProbeDir" Value="$(ScpslManaged)" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DisplayKit.Preview\DisplayKit.Preview.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1 @@
+{ "name": "DisplayKitPreview.Editor", "references": ["DisplayKitPreview.Runtime"], "includePlatforms": ["Editor"], "autoReferenced": false }

@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Role intro screen for 15.0 (replaces the native intro where plugins spawn with ShowIntroScreen off).
+       RoleIntro*.cs is the reusable component; Scenarios.cs only feeds it sample data. -->
+  <Import Project="..\..\DisplayKitPreview.props" />
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <NoWarn>$(NoWarn);MSB3277</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DisplayKit.Stub\DisplayKit.Stub.csproj" />
+    <ProjectReference Include="..\..\src\DisplayKit.Preview\DisplayKit.Preview.csproj" />
+  </ItemGroup>
+</Project>
