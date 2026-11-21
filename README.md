@@ -13,7 +13,7 @@ as usual, add a few test scenarios, and see the result in a browser that redraws
 flowchart LR
     A["Plugin UI code<br/>(unchanged C#)"] --> B["DisplayKit stub<br/>records canvases"]
     S["Scenarios<br/>(test values, frames)"] --> B
-    B --> J["Scene JSON<br/>out/{project}/*.json"]
+    B --> J["Scene JSON<br/>one file per scenario"]
     J --> H["HTML renderer<br/>live page, PNG"]
     J --> U["Unity UI Toolkit renderer<br/>reference PNG"]
 ```

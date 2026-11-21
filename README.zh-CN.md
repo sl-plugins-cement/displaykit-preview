@@ -13,7 +13,7 @@
 flowchart LR
     A["插件界面代码<br/>（C#，不需改动）"] --> B["DisplayKit 桩程序集<br/>记录画布"]
     S["测试场景<br/>（测试数据、帧）"] --> B
-    B --> J["场景 JSON<br/>out/{project}/*.json"]
+    B --> J["场景 JSON<br/>每个场景一个文件"]
     J --> H["HTML 渲染器<br/>实时页面、PNG"]
     J --> U["Unity UI Toolkit 渲染器<br/>参考 PNG"]
 ```
