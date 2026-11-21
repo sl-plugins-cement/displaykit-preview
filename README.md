@@ -249,3 +249,8 @@ with slightly different metrics.
 - [15.0 client text metrics](docs/reference.md#150-client-text-metrics): the text placement
   corrections and how they were measured.
 - [Guesses](docs/reference.md#guesses): every place the stub guesses at the unreleased API.
+
+## License
+
+[MIT](LICENSE). The fonts that `fonts.py` downloads are under the SIL Open Font License
+and are not part of this repository.

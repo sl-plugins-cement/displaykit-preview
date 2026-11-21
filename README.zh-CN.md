@@ -238,3 +238,7 @@ Inter，找不到时再下载 Inter。两个渲染器使用同一批字体文件
 - [HTML mapping](docs/reference.md#html-mapping)：HTML 渲染器如何复现 UI Toolkit 的布局，以及哪些方面没有模拟。
 - [15.0 client text metrics](docs/reference.md#150-client-text-metrics)：文字位置修正及其测量方法。
 - [Guesses](docs/reference.md#guesses)：桩程序集对未发布 API 的全部猜测。
+
+## 许可证
+
+[MIT](LICENSE)。`fonts.py` 下载的字体采用 SIL Open Font License，不属于本仓库。
